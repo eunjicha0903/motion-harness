@@ -1,0 +1,228 @@
+<!doctype html>
+<!--
+  home-intro — out/home-intro/scenes.md 안 1 장면표 그대로 (15s = 450f @30fps)
+  값 출처: docs/motion.md (움직임) · docs/video.md (룩) · docs/design.md (색 · 글자)
+  곡선: GSAP power2 = cubic → ease-out-cubic "power2.out" · ease-in-cubic "power2.in" · linear "none"
+  확대 배율은 부품 ×2.8 폭 980px(video.md 5장)에서 거꾸로 계산:
+    camera-push  버튼 화면 폭 318×1.1205 = 356.3 → 980 : ×2.750, 중심 (961.1, 640.6)
+-->
+<html lang="ko" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Pretendard"; font-weight: 400; src: url("assets/fonts/Pretendard-Regular.otf") format("opentype"); }
+      @font-face { font-family: "Pretendard"; font-weight: 600; src: url("assets/fonts/Pretendard-SemiBold.otf") format("opentype"); }
+      @font-face { font-family: "Pretendard"; font-weight: 700; src: url("assets/fonts/Pretendard-Bold.otf") format("opentype"); }
+      :root {
+        /* video.md 2 · 3장 */
+        --video-bg: #ffffff;
+        --video-text: #18191b;
+        --video-end-bg: #18191b;
+        --video-end-text: #ffffff;
+        /* video.md 4장 */
+        --phone-color: #18191b;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--video-bg);
+        font-family: "Pretendard", sans-serif;
+      }
+      #root { position: relative; width: 100%; height: 100%; }
+      .scene { position: absolute; inset: 0; }
+      .center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
+      /* 글줄: 줄 높이만큼 가리는 마스크 안에서 올라온다 */
+      .mask { display: inline-block; overflow: hidden; vertical-align: top; }
+      .mask > span { display: inline-block; }
+      /* video-headline 78/95 · video-title 67/90 (video.md 3장) */
+      .t-headline { font-size: 78px; line-height: 95px; font-weight: 700; }
+      .t-headline .mask { height: 95px; }
+      .t-title { font-size: 67px; line-height: 90px; font-weight: 600; }
+      .t-title .mask { height: 90px; }
+
+      /* 폰 프레임 (video.md 4장) */
+      .cam { position: absolute; inset: 0; }
+      .phone {
+        position: absolute;
+        left: 726.5px;
+        top: 52.5px;
+        width: 467px;
+        height: 975px;
+        padding: 15px;
+        border-radius: 68px;
+        background: var(--phone-color);
+        box-shadow: 0 22px 67px 0 #0000001f;
+      }
+      .phone .screen { width: 437px; height: 945px; border-radius: 53px; overflow: hidden; }
+      .phone .screen img { display: block; width: 437px; height: 945px; }
+
+      /* mission-card ×2.8 (video.md 5장). 부품 스타일은 src/parts/mission-card.html 그대로 */
+      #card-wrap { position: absolute; left: 470px; top: 186px; width: 350px; transform: scale(2.8); transform-origin: 0 0; }
+      #mission-card {
+        box-sizing: border-box; width: 350px; padding: 16px; display: flex; flex-direction: column; gap: 12px;
+        overflow: hidden; border: 1px solid #dce2f2; border-radius: 12px; background: #ffffff;
+      }
+      #mission-card p { margin: 0; }
+      #mission-card .cover { width: 318px; display: flex; align-items: flex-start; gap: 12px; overflow: hidden; }
+      #mission-card .copy { width: 218px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+      #mission-card .caption { font-weight: 400; font-size: 12px; line-height: 16px; white-space: pre-wrap; }
+      #mission-card .eyebrow { color: #3759de; }
+      #mission-card .title { font-weight: 700; font-size: 22px; line-height: 28px; color: #18191b; }
+      #mission-card .character { flex: none; width: 88px; height: 96px; overflow: hidden; background: #e3f2fd; }
+      #mission-card .character img { display: block; width: 88px; height: 96px; object-fit: contain; }
+      #mission-card .deliverables { width: 318px; color: #75777c; }
+      #mission-card .progress { width: 318px; display: flex; flex-direction: column; gap: 8px; }
+      #mission-card .progress-labels { display: flex; }
+      #mission-card #mission-card-progress-text { width: 190px; color: #3759de; }
+      #mission-card .due { width: 128px; color: #75777c; text-align: right; }
+      #mission-card .track { position: relative; width: 318px; height: 3px; overflow: hidden; border-radius: 1.5px; background: #ebeef5; }
+      #mission-card-progress-fill { position: absolute; left: 0; top: 0; width: 159px; height: 3px; border-radius: 1.5px; background: #3759de; }
+      #mission-card .button { box-sizing: border-box; width: 318px; padding: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px; background: #3759de; }
+      #mission-card .button p { flex: 1 0 0; font-weight: 600; font-size: 14px; line-height: 20px; color: #ffffff; text-align: center; }
+
+      /* camera-cover 면 */
+      #cover-panel { position: absolute; inset: 0; background: var(--video-end-bg); }
+
+      /* 7장 아랫단어: 한 칸에 겹쳐 두고 교체 */
+      #tick { position: relative; display: block; width: 1920px; height: 95px; overflow: hidden; }
+      #tick > span { position: absolute; left: 0; top: 0; width: 1920px; }
+
+      /* logo.html logotype-white ×2.8 = 417×53 */
+      #logo-mask { width: 417px; height: 53px; overflow: hidden; }
+      #logo-mask img { display: block; width: 417px; height: 53px; }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-kbh8" id="root" data-composition-id="main" data-start="0" data-duration="15" data-width="1920" data-height="1080">
+
+      <!-- 1 · 0–65f 글줄 -->
+      <div data-hf-id="hf-ajpa" id="s-title" class="clip scene center t-headline" data-start="0" data-duration="2.1667" data-track-index="0" style="z-index: 1; color: var(--video-text);">
+        <p data-hf-id="hf-q1an"><span data-hf-id="hf-vdsp" class="mask"><span data-hf-id="hf-ynxm" id="w1">오늘도</span></span> <span data-hf-id="hf-2y5p" class="mask"><span data-hf-id="hf-4reo" id="w2">하나씩,</span></span> <span data-hf-id="hf-452s" class="mask"><span data-hf-id="hf-wi7s" id="w3">내</span></span> <span data-hf-id="hf-3qrr" class="mask"><span data-hf-id="hf-cee0" id="w4">실력으로</span></span></p>
+      </div>
+
+      <!-- 2 · 3 · 65–184f 폰 상승 → 미션 카드로 이동 -->
+      <div data-hf-id="hf-28mq" id="s-phone" class="clip scene" data-start="2.1667" data-duration="3.5667" data-track-index="1" style="z-index: 2;">
+        <div data-hf-id="hf-c0h9" id="cam1" class="cam">
+          <div data-hf-id="hf-smm7" id="phone1" class="phone"><div data-hf-id="hf-cdmk" class="screen"><img data-hf-id="hf-369o" src="assets/01-home.png" alt="" /></div></div>
+        </div>
+      </div>
+
+      <!-- 4 · 184–261f mission-card 클로즈업 -->
+      <div data-hf-id="hf-xy8r" id="s-card" class="clip scene" data-start="5.7333" data-duration="1.3667" data-track-index="2" style="z-index: 3;">
+        <div data-hf-id="hf-yty8" id="card-wrap">
+          <div data-hf-id="hf-ny04" id="mission-card">
+            <div data-hf-id="hf-ze0h" class="cover">
+              <div data-hf-id="hf-bdx3" class="copy">
+                <p data-hf-id="hf-xbz1" class="caption eyebrow">이번 달 미션  ·  D–12</p>
+                <p data-hf-id="hf-b3mk" class="title">반복 업무를 줄이는<br data-hf-id="hf-x5px">AI 자동화</p>
+              </div>
+              <div data-hf-id="hf-s63h" class="character"><img data-hf-id="hf-7ltk" src="assets/perdi-flag.png" alt="" /></div>
+            </div>
+            <p data-hf-id="hf-41uz" class="caption deliverables">자동화 자산 1개 + 실제 적용 사례 1개</p>
+            <div data-hf-id="hf-31j5" class="progress">
+              <div data-hf-id="hf-gapn" class="progress-labels">
+                <p data-hf-id="hf-ogsw" id="mission-card-progress-text" class="caption">50% · 2/4 단계 완료</p>
+                <p data-hf-id="hf-smkz" class="caption due">9월 30일 마감</p>
+              </div>
+              <div data-hf-id="hf-64lp" class="track"><div data-hf-id="hf-dsta" id="mission-card-progress-fill"></div></div>
+            </div>
+            <div data-hf-id="hf-xxx4" id="mission-card-button" class="button"><p data-hf-id="hf-zb56">적용 사례 정리하기 →</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5 · 261–305f 버튼으로 밀어 들어가기 -->
+      <div data-hf-id="hf-zlua" id="s-push" class="clip scene" data-start="7.1" data-duration="1.4667" data-track-index="3" style="z-index: 4;">
+        <div data-hf-id="hf-fyla" id="cam2" class="cam">
+          <div data-hf-id="hf-hr4k" id="phone2" class="phone"><div data-hf-id="hf-0hv8" class="screen"><img data-hf-id="hf-afas" src="assets/01-home.png" alt="" /></div></div>
+        </div>
+      </div>
+
+      <!-- 6 · 299–450f 어두운 면 (덮은 뒤 끝까지 바탕) -->
+      <div data-hf-id="hf-qkbs" id="s-cover" class="clip scene" data-start="8.3667" data-duration="6.6333" data-track-index="4" style="z-index: 5; overflow: hidden;">
+        <div data-hf-id="hf-1afv" id="cover-panel"></div>
+      </div>
+
+      <!-- 7 · 305–370f 고정 윗줄 + 아랫단어 교체 -->
+      <div data-hf-id="hf-mmtp" id="s-end" class="clip scene center" data-start="8.9" data-duration="3.4333" data-track-index="5" style="z-index: 6; color: var(--video-end-text);">
+        <p data-hf-id="hf-v618" class="t-title"><span data-hf-id="hf-4xou" class="mask"><span data-hf-id="hf-7bch" id="fixed">오늘도 하나씩,</span></span></p>
+        <div data-hf-id="hf-ysr4" id="tick" class="t-headline">
+          <span data-hf-id="hf-seiw" id="k1">AI 실무</span>
+          <span data-hf-id="hf-adke" id="k2">자동화</span>
+          <span data-hf-id="hf-4wqw" id="k3">리서치</span>
+          <span data-hf-id="hf-yqjk" id="k4">내 실력으로</span>
+        </div>
+      </div>
+
+      <!-- 8 · 370–450f 로고 -->
+      <div data-hf-id="hf-58z9" id="s-logo" class="clip scene center" data-start="12.3333" data-duration="2.6667" data-track-index="6" style="z-index: 7;">
+        <div data-hf-id="hf-vkih" id="logo-mask"><img data-hf-id="hf-0odh" id="logo" src="assets/logo-logotype-white.svg" alt="Huddling Club" /></div>
+      </div>
+    </div>
+
+    <script>
+      const F = (f) => f / 30;
+      const OUT = "power2.out"; // ease-out-cubic
+      const IN = "power2.in"; // ease-in-cubic
+      const INOUT = "power2.inOut"; // ease-in-out-cubic
+      const tl = gsap.timeline({ paused: true });
+
+      // 1 · 단어 motion-enter 6f × stagger-9 → hold-read → motion-exit 6f
+      ["#w1", "#w2", "#w3", "#w4"].forEach((id, i) => {
+        tl.fromTo(id, { y: 95 }, { y: 0, duration: F(6), ease: OUT }, F(i * 9));
+        tl.to(id, { y: -95, duration: F(6), ease: IN }, F(59));
+      });
+
+      // 2 · camera-rise 45f: rise-offset 0.56 × 1080 · tilt 35°→8° · scale 0.8→1
+      tl.fromTo("#phone1",
+        { y: 605, rotationX: 35, scale: 0.8, transformOrigin: "50% 100%" },
+        { y: 0, rotationX: 8, scale: 1, duration: F(45), ease: OUT }, F(65));
+
+      // 2 · hold-screen 110–172 동안 drift-scale 1 → 1.02 linear
+      tl.fromTo("#cam1",
+        { scale: 1, transformOrigin: "960px 540px" },
+        { scale: 1.02, duration: F(62), ease: "none" }, F(110));
+
+      // 3 · 뺌 (스냅보드 피드백: 폰 확대가 5장과 겹침)
+
+      // 4 · 카드 172–213 동안 drift-scale 1 → 1.02 linear
+      tl.fromTo("#mission-card",
+        { scale: 1, transformOrigin: "50% 50%" },
+        { scale: 1.02, duration: F(41), ease: "none" }, F(172));
+
+      // 4 · cut 172 → 진행 바 0→50% duration-15 ease-out-cubic → hold-read
+      tl.fromTo("#mission-card-progress-fill",
+        { scaleX: 0, transformOrigin: "0% 50%" },
+        { scaleX: 1, duration: F(15), ease: OUT }, F(172));
+
+      // 5 · 2장 끝 상태(8°) → camera-push 38f linear: 버튼 → 가운데 · 폭 980
+      tl.fromTo("#phone2", { rotationX: 8, transformOrigin: "50% 100%" }, { rotationX: 8, duration: F(1) }, F(213));
+      tl.fromTo("#cam2",
+        { scale: 1, x: 0, y: 0, transformOrigin: "961.1px 640.6px" },
+        { scale: 2.75, x: -1.1, y: -100.6, duration: F(38), ease: "none" }, F(213));
+
+      // 6 · camera-cover 6f ease-in-cubic, 위에서 덮음 (A 00:16.20) → hold-word
+      tl.fromTo("#cover-panel", { yPercent: -100 }, { yPercent: 0, duration: F(6), ease: IN }, F(251));
+
+      // 7 · 윗줄 motion-enter 6f → 아랫단어 교체 5f, 간격 10 · 10 · 10 (motion.md 4장) → hold-screen
+      tl.fromTo("#fixed", { y: 90 }, { y: 0, duration: F(6), ease: OUT }, F(267));
+      const ticks = ["#k1", "#k2", "#k3", "#k4"];
+      const at = [273, 283, 293, 303];
+      ticks.forEach((id, i) => {
+        tl.fromTo(id, { y: 95 }, { y: 0, duration: F(5), ease: OUT }, F(at[i]));
+        if (i < ticks.length - 1) tl.to(id, { y: -95, duration: F(5), ease: OUT }, F(at[i + 1]));
+      });
+
+      // 8 · 로고 motion-change 12f
+      tl.fromTo("#logo", { y: 53 }, { y: 0, duration: F(12), ease: OUT }, F(370));
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

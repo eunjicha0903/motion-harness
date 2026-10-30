@@ -1,1 +1,13 @@
 .DS_Store
+
+# 설치한 외부 스킬 (skills-lock.json으로 다시 설치)
+.agents/
+.claude/skills/*
+!.claude/skills/make-video/
+
+# 받은 레퍼런스 파일 (외부 저작물, 로컬에만)
+references/
+
+# HyperFrames 캐시
+out/*/project/.hyperframes/
+out/*/project/.thumbnails/
